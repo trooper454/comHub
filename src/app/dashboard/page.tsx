@@ -39,19 +39,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>Welcome to ComHub, {user.display_name || user.username}!</h1>
-      <p>You are logged in.</p>
- 
-      {/* Show error if present */}
-      {errorMessage && (
-        <p style={{ color: 'red', marginTop: '1rem', marginBottom: '1rem' }}>
-          Error: {errorMessage}
-        </p>
-      )}
-
-      <form action={logoutAction}>
-        <button type="submit">Log out</button>
-      </form>
   
       {/* Server creation form – add this if you haven't yet */}
       <div style={{ marginTop: '2rem' }}>
