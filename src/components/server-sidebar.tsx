@@ -26,6 +26,12 @@ type User = {
   // add email or other fields if you want to display them
 };
 
+const [refreshKey, setRefreshKey] = useState(0);
+
+useEffect(() => {
+  fetchUser(...);
+}, [router, refreshKey]);  // re-runs on key change
+
 export function ServerSidebar() {
   const router = useRouter();
 

@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"; // from shadcn
 import { ServerSidebar } from "@/components/server-sidebar"; // we'll create
 import { ChannelSidebar } from "@/components/channel-sidebar";
 import { MainContent } from "@/components/main-content";
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,6 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
+  <AuthProvider>
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
         inter.className,
@@ -36,5 +38,6 @@ export default function RootLayout({
         </div>
       </body>
     </html>
+  </AuthProvider>
   );
 }

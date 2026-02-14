@@ -3,6 +3,7 @@ import { verify } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { lucia } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { useAuthRefresh } from "@/context/AuthContext";
 
 export default function LoginPage() {
   async function loginAction(formData: FormData) {
@@ -41,6 +42,12 @@ export default function LoginPage() {
       sessionCookie.value,
       sessionCookie.attributes
     );
+
+    // After successful login
+    const triggerRefresh = useAuthRefresh();
+    triggerRefresh();
+    router.push("/dashboard");
+    router.refresh(); // optional bonus
 
     redirect('/dashboard');
   }
