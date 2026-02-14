@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, Mic, MicOff, Volume2, VolumeX, LogOut, Smile } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuthRefresh } from "@/context/AuthContext";  // ← this line
 
 type User = {
   id: string;
@@ -26,14 +27,9 @@ type User = {
   // add email or other fields if you want to display them
 };
 
-const [refreshKey, setRefreshKey] = useState(0);
-
-useEffect(() => {
-  fetchUser(...);
-}, [router, refreshKey]);  // re-runs on key change
-
 export function ServerSidebar() {
   const router = useRouter();
+  const triggerRefresh = useAuthRefresh();
 
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,32 +47,50 @@ export function ServerSidebar() {
     dnd: "bg-purple-500",
   };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch("/api/user", {
-          credentials: "include", // important for cookie-based sessions
-        });
+  const fetchUser = async () => {
+    try {
+      const res = await fetch("/api/user", {
+      credentials: "include", // important for cookie-based sessions
+      });
 
-        if (!res.ok) {
-          if (res.status === 401) {
-            router.push("/login");
-            return;
-          }
-          throw new Error("Failed to fetch user");
+      if (!res.ok) {
+        if (res.status === 401) {
+          router.push("/login");
+          return;
         }
+        throw new Error("Failed to fetch user");
+      }
 
-        const data = await res.json();
-        setUser(data.user);
-      } catch (err) {
-        console.error("User fetch error:", err);
-        setError("Could not load user info");
-      } finally {
-        setLoading(false);
+      const data = await res.json();
+      setUser(data.user);
+    } catch (err) {
+      console.error("User fetch error:", err);
+      setError("Could not load user info");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect (() => {
+    fetchUser();
+  }, [router, triggerRefresh]);
+
+  // Inside server-sidebar.tsx useEffect block (add if missing)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchUser();  // your fetchUser function that calls /api/user
       }
     };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [router]);
 
-    fetchUser();
+  // Optional: window focus fallback
+  useEffect(() => {
+    const handleFocus = () => fetchUser();
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [router]);
 
   const handleLogout = async () => {
@@ -108,7 +122,11 @@ export function ServerSidebar() {
     );
   }
 
-  if (error || !user) {
+  if (!user) {
+	  router.push("/login");
+  }
+
+  if (error) {
     return (
       <div className="w-20 bg-[#202225] flex flex-col items-center py-3 text-red-400 text-xs">
         Error
