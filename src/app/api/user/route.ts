@@ -5,7 +5,7 @@ import { lucia } from "@/lib/auth";  // This should work if lucia is exported fr
 
 export async function GET() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore().get(lucia.sessionCookieName)?.value ?? null;
+  const sessionId = cookieStore.get(lucia.sessionCookieName)?.value ?? null;
 
   if (!sessionId) {
     return NextResponse.json({ user: null }, { status: 401 });
