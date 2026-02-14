@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Mic, MicOff, Volume2, VolumeX, LogOut, Smile } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthRefresh } from "@/context/AuthContext";
+import { useServer } from "@/context/ServerContext";
 
 type User = {
   id: string;
@@ -59,6 +60,7 @@ export function ServerSidebar() {
   const [speakerMuted, setSpeakerMuted] = useState(false);
 
   const [dialogOpen, setDialogOpen] = useState(false); // modal open state
+  const { activeServerId, setActiveServerId } = useServer();
 
   const statusColors = {
     online: "bg-green-500",
@@ -259,8 +261,10 @@ export function ServerSidebar() {
         servers.map((server) => (
           <button
             key={server.id}
-            className="group relative focus:outline-none"
-            // onClick={() => setActiveServer(server.id)} // add later
+            className={`group relative focus:outline-none transition-all ${
+             activeServerId === server.id ? "opacity-100 scale-110" : "opacity-70 hover:opacity-100"
+            }`}
+            onClick={() => setActiveServerId(server.id)}
           >
             <Avatar className="h-12 w-12 rounded-full transition-all group-hover:rounded-2xl">
               {server.iconUrl ? (

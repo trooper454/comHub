@@ -6,6 +6,7 @@ import { ServerSidebar } from "@/components/server-sidebar"; // we'll create
 import { ChannelSidebar } from "@/components/channel-sidebar";
 import { MainContent } from "@/components/main-content";
 import { AuthProvider } from "@/context/AuthContext";
+import { ServerProvider } from "@/context/ServerContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
 }>) {
   return (
   <AuthProvider>
+   <ServerProvider>
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
         inter.className,
@@ -38,6 +40,7 @@ export default function RootLayout({
         </div>
       </body>
     </html>
+   </ServerProvider>
   </AuthProvider>
   );
 }

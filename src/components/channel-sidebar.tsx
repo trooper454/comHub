@@ -2,6 +2,8 @@
 "use client"; // Needed for interactive state (menu, toggles)
 
 import { useState } from "react";
+import { useServer } from "@/context/ServerContext";
+import { Button } from "@/components/ui/button";
 import {
   Avatar,
   AvatarFallback,
@@ -15,13 +17,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Mic, MicOff, Volume2, VolumeX, LogOut, Smile, Clock, Ban } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, LogOut, Smile, Clock, Ban, MoreVertical } from "lucide-react";
 
-// REPLACE these with your actual session import & signOut
-// Example for NextAuth:
-// import { useSession, signOut } from "next-auth/react";
-// For Clerk: import { useUser, SignOutButton } from "@clerk/nextjs";
-// For custom: adjust accordingly
+
 const useUserSession = () => {
   // Placeholder — swap with real hook
   return {
@@ -32,10 +30,21 @@ const useUserSession = () => {
 
 export function ChannelSidebar() {
   const { user, status: initialStatus } = useUserSession(); // ← Your real session hook here
-
+  const { activeServerId } = useServer();
   const [status, setStatus] = useState<"online" | "away" | "busy" | "dnd">(initialStatus || "online");
   const [micMuted, setMicMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
+
+  const [activeServer, setActiveServer] = useState<{ name: string } | null>(null);
+  
+  useEffect(() => {
+    if (activeServerId) {
+      // Fetch /api/servers/[id] or filter from global list
+      setActiveServer({ name: "Fetched Name" }); // stub
+    } else {
+      setActiveServer(null);
+    }
+  }, [activeServerId]);
 
   const statusColors = {
     online: "bg-green-500",
@@ -55,8 +64,27 @@ export function ChannelSidebar() {
   return (
     <div className="w-60 bg-[#2f3136] flex flex-col h-full">
       {/* Server name header */}
-      <div className="p-3 font-semibold border-b border-[#202225] flex items-center">
-        Selected Server
+      <div className="p-4 font-bold border-b border-[#202225] flex items-center justify-between">
+        <span className="truncate">{activeServerName}</span>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreVertical className="h-5 w-5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-[#36393f] border-[#202225] text-[#dcddde]">
+            <DropdownMenuItem className="focus:bg-[#393c43]">
+              Invite People
+            </DropdownMenuItem>
+            <DropdownMenuItem className="focus:bg-[#393c43]">
+              Server Settings
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-[#202225]" />
+            <DropdownMenuItem className="text-red-400 focus:bg-[#393c43] focus:text-red-300">
+              Leave Server
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Scrollable channel list */}
