@@ -198,7 +198,7 @@ async function createServerAction(formData: FormData) {
     
     revalidatePath('/dashboard');
 
-    redirect(`/dashboard?serverCreated=${server.id}`);  // or to a server-specific page later
+    redirect(`/dashboard`);  // or to a server-specific page later
   } catch (err) {
     console.error('Create server failed:', err);
     return { error: 'Failed to create server. Try again.' };

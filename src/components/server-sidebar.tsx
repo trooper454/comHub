@@ -27,6 +27,13 @@ type User = {
   // add email or other fields if you want to display them
 };
 
+type Server = {
+  id: string;
+  name: string;
+  iconUrl?: string | null;
+  isOwner: boolean;
+};
+
 export function ServerSidebar() {
   const router = useRouter();
   const triggerRefresh = useAuthRefresh();
@@ -34,7 +41,8 @@ export function ServerSidebar() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [servers, setServers] = useState<Server[]>([]);
+  const [loadingServers, setLoadingServers] = useState(true);
   const [status, setStatus] = useState<"online" | "away" | "busy" | "dnd">("online");
   const [micMuted, setMicMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
@@ -71,6 +79,27 @@ export function ServerSidebar() {
     }
   };
 
+  // Fetch servers (add this useEffect after user fetch)
+  useEffect(() => {
+    const fetchServers = async () => {
+      if (!user) return;
+  
+      setLoadingServers(true);
+      try {
+        const res = await fetch("/api/servers", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setServers(data.servers || []);
+        } else {
+          setServers([]);
+        }
+      } catch (err) {
+        console.error("Servers fetch error:", err);
+        setServers([]);
+      } finally {
+        setLoadingServers(false);
+      }
+    };
   useEffect (() => {
     fetchUser();
   }, [router, triggerRefresh]);
@@ -112,8 +141,39 @@ export function ServerSidebar() {
   };
 
   // Mock servers — replace with real data later
-  const servers = ["MyServer", "MyEscape", "RaidGroup"];
-
+  {loadingServers ? (
+    <div className="text-gray-500 text-xs animate-pulse">Loading servers...</div>
+  ) : servers.length === 0 ? (
+    <div className="text-gray-500 text-xs">No servers yet</div>
+  ) : (
+    servers.map((server) => (
+      <button
+        key={server.id}
+        className="group relative focus:outline-none"
+        // onClick={() => setActiveServer(server.id)} // add later for channel load
+      >
+        <Avatar className="h-12 w-12 rounded-full transition-all group-hover:rounded-2xl">
+          {server.iconUrl ? (
+            <AvatarImage src={server.iconUrl} alt={server.name} />
+          ) : (
+            <AvatarFallback className="bg-[#36393f] text-white font-semibold">
+              {server.name[0]?.toUpperCase() || "?"}
+            </AvatarFallback>
+          )}
+          {server.isOwner && (
+            <span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[10px] font-bold px-1 rounded-full border-2 border-[#202225]">
+              👑
+            </span>
+          )}
+        </Avatar>
+        <div className="absolute left-full ml-2 top-1/2 -translate-y-1/2 bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none z-50 whitespace-nowrap">
+          {server.name}
+          {server.isOwner && " (Owner)"}
+        </div>
+      </button>
+    ))
+  )} 
+  
   if (loading) {
     return (
       <div className="w-20 bg-[#202225] flex flex-col items-center py-3">
