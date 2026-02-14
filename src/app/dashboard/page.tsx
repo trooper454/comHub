@@ -40,27 +40,6 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
   return (
     <div style={{ padding: '2rem', fontFamily: 'sans-serif' }}>
   
-      {/* Server creation form – add this if you haven't yet */}
-      <div style={{ marginTop: '2rem' }}>
-        <h2>Create a Server</h2>
-        <form action={createServerAction}>
-          <input
-            name="name"
-            placeholder="Server name (e.g. My Friday Night Raid Group)"
-            required
-            minLength={3}
-            maxLength={50}
-            style={{ width: '300px', padding: '0.5rem', marginRight: '1rem' }}
-          />
-          <button type="submit">Create</button>
-        </form>
-      {/* Optional: show success message if redirected back */}
-      {resolvedSearchParams.serverCreated && (
-        <p style={{ color: 'green' }}>Server created successfully!</p>
-      )}
-      </div>
-
-
       {/* Your Servers list */}
       <div style={{ marginTop: '2rem' }}>
         <h2>Your Servers</h2>
@@ -113,97 +92,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       </div>
       <div style={{ marginTop: '3rem', borderTop: '1px solid #444', paddingTop: '2rem' }}>
 
-      {/*join an exisiting server*/}
-      <h2>Join an Existing Server</h2>
-      <form action={joinServerAction}>
-        <input
-          name="inviteCode"
-          placeholder="Enter invite code (e.g. abc123)"
-          required
-          minLength={4}
-          maxLength={20}
-          style={{ width: '300px', padding: '0.5rem', marginRight: '1rem' }}
-        />
-        <button type="submit">Join</button>
-      </form>
-    
-      {/* Show join success or error */}
-      {resolvedSearchParams.joinSuccess && (
-        <p style={{ color: 'green', marginTop: '1rem' }}>
-          Successfully joined server!
-        </p>
-      )}
-      {resolvedSearchParams.error && resolvedSearchParams.error.includes('join') && (
-        <p style={{ color: 'red', marginTop: '1rem' }}>
-          {resolvedSearchParams.error}
-        </p>
-      )}
     </div>
     </div>
   );
-}
-
-// Simple logout action
-async function logoutAction() {
-  'use server';
-  
-  const sessionData = await getSession();
-  
-  if (sessionData?.session) {
-    await lucia.invalidateSession(sessionData.session.id);
-  }
-  
-  const cookieStore = await cookies();
-  const blankCookie = lucia.createBlankSessionCookie();
-  
-  cookieStore.set(
-	  blankCookie.name, 
-	  blankCookie.value, 
-	  blankCookie.attributes
-  );
-  
-  redirect('/login');
-}
-
-// Simple create server action
-async function createServerAction(formData: FormData) {
-  'use server';
-
-  const session = await getSession();
-  if (!session?.user) {
-    redirect('/login');
-  }
-
-  const name = formData.get('name')?.toString().trim();
-  if (!name || name.length < 3 || name.length > 50) {
-    return { error: 'Server name must be 3–50 characters.' };
-  }
-
-  try {
-    // Create server
-    const { rows: [server] } = await db.query(
-      `INSERT INTO servers (name, owner_id)
-       VALUES ($1, $2)
-       RETURNING id`,
-      [name, session.user.id]
-    );
-
-    // Auto-join creator as member
-    await db.query(
-      `INSERT INTO server_members (server_id, user_id)
-       VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
-      [server.id, session.user.id]
-    );
-    
-    revalidatePath('/dashboard');
-
-    redirect(`/dashboard`);  // or to a server-specific page later
-  } catch (err) {
-    console.error('Create server failed:', err);
-    return { error: 'Failed to create server. Try again.' };
-  }
-  
 }
 
 // Server action for leaving
@@ -323,80 +214,3 @@ async function transferOwnershipAction(formData: FormData) {
   }
 }
 
-// join an existing server
-async function joinServerAction(formData: FormData) {
-  'use server';
-
-  const session = await getSession();
-  if (!session?.user) {
-    redirect('/login');
-  }
-
-  const inviteCode = formData.get('inviteCode')?.toString()?.trim();
-  if (!inviteCode || inviteCode.length < 4) {
-    throw new Error('Invalid invite code');
-  }
-
-  try {
-    // Find the invite
-    const { rows: [invite] } = await db.query(
-      `SELECT 
-         si.id, si.server_id, si.uses, si.max_uses, si.expires_at,
-         s.name AS server_name
-       FROM server_invites si
-       JOIN servers s ON si.server_id = s.id
-       WHERE si.code = $1`,
-      [inviteCode]
-    );
-
-    if (!invite) {
-      throw new Error('Invalid or expired invite code');
-    }
-
-    // Check expiration
-    if (invite.expires_at && new Date(invite.expires_at) < new Date()) {
-      throw new Error('This invite has expired');
-    }
-
-    // Check usage limit
-    if (invite.max_uses !== null && invite.uses >= invite.max_uses) {
-      throw new Error('This invite has reached its usage limit');
-    }
-
-    // Check if already a member
-    const { rowCount: existingMember } = await db.query(
-      `SELECT 1 FROM server_members WHERE server_id = $1 AND user_id = $2`,
-      [invite.server_id, session.user.id]
-    );
-
-    if (existingMember > 0) {
-      throw new Error('You are already a member of this server');
-    }
-
-    // Join!
-    await db.query(
-      `INSERT INTO server_members (server_id, user_id)
-       VALUES ($1, $2)
-       ON CONFLICT DO NOTHING`,
-      [invite.server_id, session.user.id]
-    );
-
-    // Increment uses
-    await db.query(
-      `UPDATE server_invites 
-       SET uses = uses + 1, updated_at = NOW()
-       WHERE id = $1`,
-      [invite.id]
-    );
-
-    revalidatePath('/dashboard');
-
-    // Success
-  } catch (err: any) {
-    const msg = err.message || 'Failed to join server. Try again.';
-    console.error('Join server failed:', err);
-    redirect(`/dashboard?error=${encodeURIComponent(msg)}`);
-  }
-
-  redirect(`/dashboard?joinSuccess=true`);
-}

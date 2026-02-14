@@ -15,6 +15,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Plus, Mic, MicOff, Volume2, VolumeX, LogOut, Smile } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthRefresh } from "@/context/AuthContext";
@@ -46,6 +57,8 @@ export function ServerSidebar() {
   const [status, setStatus] = useState<"online" | "away" | "busy" | "dnd">("online");
   const [micMuted, setMicMuted] = useState(false);
   const [speakerMuted, setSpeakerMuted] = useState(false);
+
+  const [dialogOpen, setDialogOpen] = useState(false); // modal open state
 
   const statusColors = {
     online: "bg-green-500",
@@ -79,7 +92,7 @@ export function ServerSidebar() {
       }
     };
     fetchUser();
-  }, [router]);
+  }, [router, triggerRefresh]);
 
   // Fetch servers when user is loaded
   useEffect(() => {
@@ -102,7 +115,7 @@ export function ServerSidebar() {
       }
     };
     fetchServers();
-  }, [user, router]);
+  }, [user, router, triggerRefresh]);
 
   // Visibility change re-fetch
   useEffect(() => {
@@ -271,10 +284,114 @@ export function ServerSidebar() {
         ))
       )}
 
-      {/* Create server button */}
-      <button className="mt-2 rounded-full bg-[#3ba55c] p-3 hover:bg-[#2e8b4f] transition">
-        <Plus className="h-6 w-6 text-white" />
-      </button>
+     {/* + button opens dialog */}
+     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+       <DialogTrigger asChild>
+         <button className="rounded-full bg-[#3ba55c] p-3 hover:bg-[#2e8b4f] transition">
+           <Plus className="h-6 w-6 text-white" />
+         </button>
+       </DialogTrigger>
+     
+       <DialogContent className="sm:max-w-[425px] bg-[#2f3136] text-[#dcddde] border-[#202225]">
+         <DialogHeader>
+           <DialogTitle className="text-xl">Server Management</DialogTitle>
+         </DialogHeader>
+     
+         <Tabs defaultValue="create" className="mt-4">
+           <TabsList className="grid w-full grid-cols-2 bg-[#36393f]">
+             <TabsTrigger value="create">Create</TabsTrigger>
+             <TabsTrigger value="join">Join</TabsTrigger>
+           </TabsList>
+     
+           <TabsContent value="create" className="space-y-4">
+             <form
+               onSubmit={async (e) => {
+                 e.preventDefault();
+                 const formData = new FormData(e.currentTarget);
+     
+                 try {
+                   const res = await fetch("/api/servers", {
+                     method: "POST",
+                     body: formData,
+                     credentials: "include",
+                   });
+     
+                   const data = await res.json();
+     
+                   if (res.ok) {
+                     setDialogOpen(false);
+                     triggerRefresh();  // Re-fetch user/servers in sidebar
+                     // Optional: toast success
+                   } else {
+                     alert(data.error || "Failed to create server");
+                   }
+                 } catch (err) {
+                   console.error(err);
+                   alert("Network error");
+                 }
+               }}
+             >
+               <div className="space-y-2">
+                 <Label htmlFor="name">Server Name</Label>
+                 <Input
+                   id="name"
+                   name="name"
+                   placeholder="My Friday Night Raid Group"
+                   className="bg-[#383a40] border-[#202225] text-white placeholder-gray-400"
+                   required
+                 />
+               </div>
+               <Button type="submit" className="w-full mt-6 bg-[#5865f2] hover:bg-[#4752c4]">
+                 Create Server
+               </Button>
+             </form>
+           </TabsContent>
+     
+           <TabsContent value="join" className="space-y-4">
+             <form
+               onSubmit={async (e) => {
+                 e.preventDefault();
+                 const formData = new FormData(e.currentTarget);
+     
+                 try {
+                   const res = await fetch("/api/servers/join", {
+                     method: "POST",
+                     body: formData,
+                     credentials: "include",
+                   });
+     
+                   const data = await res.json();
+     
+                   if (res.ok) {
+                     setDialogOpen(false);
+                     triggerRefresh();  // Sidebar updates with new server
+                   } else {
+                     alert(data.error || "Failed to join server");
+                   }
+                 } catch (err) {
+                   console.error(err);
+                   alert("Network error");
+                 }
+               }}
+             >
+               <div className="space-y-2">
+                 <Label htmlFor="code">Invite Code</Label>
+                 <Input
+                   id="code"
+                   name="code"
+                   placeholder="abc123"
+                   className="bg-[#383a40] border-[#202225] text-white placeholder-gray-400"
+                   required
+                 />
+               </div>
+               <Button type="submit" className="w-full mt-6 bg-[#3ba55c] hover:bg-[#2e8b4f]">
+                 Join Server
+               </Button>
+             </form>
+           </TabsContent>
+         </Tabs>
+       </DialogContent>
+     </Dialog>
     </div>
   );
 }
