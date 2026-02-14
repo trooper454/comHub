@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { lucia } from "@/lib/auth";  // This should work if lucia is exported from lib/auth.ts
 
 export async function GET() {
+  const cookieStore = await cookies();
   const sessionId = cookies().get(lucia.sessionCookieName)?.value ?? null;
 
   if (!sessionId) {
