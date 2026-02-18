@@ -2,7 +2,7 @@
 "use client"; // Needed for interactive state (menu, toggles)
 
 import { prisma } from '@/lib/prisma';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useServer } from "@/context/ServerContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,7 +66,7 @@ export function ChannelSidebar() {
     <div className="w-60 bg-[#2f3136] flex flex-col h-full">
       {/* Server name header */}
       <div className="p-4 font-bold border-b border-[#202225] flex items-center justify-between">
-        <span className="truncate">{activeServerName}</span>
+        <span className="truncate">{activeServer}</span>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
