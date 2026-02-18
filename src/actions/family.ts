@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { auth } from '@/lib/auth' // assuming you have a session helper (Lucia/Clerk)
+import { getSession } from '@/lib/auth'
 
 export async function createFamily(name: string) {
   const session = await auth()
@@ -29,8 +29,8 @@ export async function createFamily(name: string) {
 }
 
 export async function inviteToFamily(familyId: string, email: string) {
-  const session = await auth()
-  if (!session?.user?.id) throw new Error('Unauthorized')
+const result = await getSession()
+  if (!result?.session || !result.user?.id) throw new Error('Unauthorized')
 
   // TODO: generate magic link or code; for now, just log (replace with email/send invite later)
   console.log(`Invite ${email} to family ${familyId} by ${session.user.id}`)
