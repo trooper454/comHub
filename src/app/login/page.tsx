@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { verify } from '@/lib/auth';
 import { db } from '@/lib/db';

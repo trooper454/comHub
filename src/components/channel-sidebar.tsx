@@ -1,6 +1,7 @@
 // src/components/channel-sidebar.tsx
 "use client"; // Needed for interactive state (menu, toggles)
 
+import { prisma } from '@/lib/prisma';
 import { useState } from "react";
 import { useServer } from "@/context/ServerContext";
 import { Button } from "@/components/ui/button";

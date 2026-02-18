@@ -1,4 +1,5 @@
 // src/app/api/servers/route.ts
+import { prisma } from '@/lib/prisma';
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { lucia } from "@/lib/auth";

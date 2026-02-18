@@ -1,3 +1,4 @@
+import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth'; // we'll create this helper next
 import { lucia } from '@/lib/auth';               // ← ADD THIS LINE
 import { cookies } from 'next/headers';
