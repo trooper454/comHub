@@ -240,6 +240,13 @@ export function ServerSidebar() {
             {speakerMuted ? "Unmute speakers" : "Mute speakers"}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-[#202225]" />
+           <DropdownMenuItem asChild>
+           <Link href="/settings" className="flex items-center gap-2">
+             <Settings className="h-4 w-4" /> {/* import { Settings } from 'lucide-react' */}
+             User Settings
+           </Link>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-[#202225]" />
           <DropdownMenuItem
             className="text-red-400 focus:bg-[#393c43] focus:text-red-300 cursor-pointer"
             onSelect={handleLogout}
