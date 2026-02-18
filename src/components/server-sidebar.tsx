@@ -31,6 +31,9 @@ import { Plus, Mic, MicOff, Volume2, VolumeX, LogOut, Smile } from "lucide-react
 import { useRouter } from "next/navigation";
 import { useAuthRefresh } from "@/context/AuthContext";
 import { useServer } from "@/context/ServerContext";
+import Link from 'next/link'
+import { Settings } from 'lucide-react'
+import { SettingsModal } from '@/components/settings/SettingsModal'
 
 type User = {
   id: string;
@@ -62,6 +65,7 @@ export function ServerSidebar() {
 
   const [dialogOpen, setDialogOpen] = useState(false); // modal open state
   const { activeServerId, setActiveServerId } = useServer();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const statusColors = {
     online: "bg-green-500",
@@ -240,13 +244,11 @@ export function ServerSidebar() {
             {speakerMuted ? "Unmute speakers" : "Mute speakers"}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="bg-[#202225]" />
-           <DropdownMenuItem asChild>
-           <Link href="/settings" className="flex items-center gap-2">
-             <Settings className="h-4 w-4" /> {/* import { Settings } from 'lucide-react' */}
-             User Settings
-           </Link>
+          <DropdownMenuItem onClick={() => setSettingsOpen(true)} className="cursor-pointer flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            User Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-[#202225]" />
+	  <DropdownMenuSeparator className="bg-[#202225]" />
           <DropdownMenuItem
             className="text-red-400 focus:bg-[#393c43] focus:text-red-300 cursor-pointer"
             onSelect={handleLogout}
@@ -404,6 +406,7 @@ export function ServerSidebar() {
          </Tabs>
        </DialogContent>
      </Dialog>
+     <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }
