@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model channel_overwrites {
+  id          String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  channel_id  String                @db.Uuid
+  target_id   String                @db.Uuid
+  target_type overwrite_target_type
+  allow       BigInt?               @default(0)
+  deny        BigInt?               @default(0)
+  channels    channels              @relation(fields: [channel_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([channel_id, target_id, target_type])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model channels {
+  id                  String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  server_id           String                @db.Uuid
+  name                String
+  type                channel_type
+  position            Int?                  @default(0)
+  parent_id           String?               @db.Uuid
+  is_private          Boolean?              @default(false)
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  channel_overwrites  channel_overwrites[]
+  channels            channels?             @relation("channelsTochannels", fields: [parent_id], references: [id], onUpdate: NoAction)
+  other_channels      channels[]            @relation("channelsTochannels")
+  servers             servers               @relation(fields: [server_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages            messages[]
+  user_voice_channels user_voice_channels[]
+  voice_states        voice_states[]
+}
+
+model families {
+  id                  String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name                String
+  owner_id            String                @db.Uuid
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  users               users                 @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  family_members      family_members[]
+  family_restrictions family_restrictions[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model family_members {
+  family_id String      @db.Uuid
+  user_id   String      @db.Uuid
+  role      family_role
+  joined_at DateTime?   @default(now()) @db.Timestamptz(6)
+  families  families    @relation(fields: [family_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users     users       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([family_id, user_id])
+}
+
+model family_restrictions {
+  id                     String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  family_id              String    @db.Uuid
+  child_id               String    @db.Uuid
+  max_daily_hours        Int?      @default(180)
+  allowed_server_ids     String[]  @default([]) @db.Uuid
+  voice_muted_by_default Boolean?  @default(false)
+  created_at             DateTime? @default(now()) @db.Timestamptz(6)
+  users                  users     @relation(fields: [child_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  families               families  @relation(fields: [family_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([family_id, child_id])
+}
+
+model messages {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  channel_id String    @db.Uuid
+  author_id  String    @db.Uuid
+  content    String
+  edited_at  DateTime? @db.Timestamptz(6)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [author_id], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  channels   channels  @relation(fields: [channel_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model server_invites {
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  server_id  String    @db.Uuid
+  code       String    @unique
+  created_by String?   @db.Uuid
+  expires_at DateTime? @db.Timestamptz(6)
+  max_uses   Int?
+  uses       Int?      @default(0)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users?    @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  servers    servers   @relation(fields: [server_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([code], map: "idx_server_invites_code")
+}
+
+model server_members {
+  server_id String    @db.Uuid
+  user_id   String    @db.Uuid
+  nickname  String?
+  joined_at DateTime? @default(now()) @db.Timestamptz(6)
+  servers   servers   @relation(fields: [server_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users     users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([server_id, user_id], map: "guild_members_pkey")
+}
+
+model servers {
+  id             String           @id(map: "guilds_pkey") @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  name           String
+  owner_id       String           @db.Uuid
+  icon_url       String?
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  channels       channels[]
+  server_invites server_invites[]
+  server_members server_members[]
+  users          users            @relation(fields: [owner_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "guilds_owner_id_fkey")
+  voice_states   voice_states[]
+}
+
+model user_sessions {
+  id         String    @id
+  user_id    String    @db.Uuid
+  expires_at DateTime  @db.Timestamptz(6)
+  created_at DateTime? @default(now()) @db.Timestamptz(6)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at], map: "idx_sessions_expires")
+  @@index([user_id], map: "idx_sessions_user")
+}
+
+model user_voice_channels {
+  user_id     String    @db.Uuid
+  channel_id  String    @db.Uuid
+  is_speaking Boolean?  @default(false)
+  joined_at   DateTime? @default(now()) @db.Timestamptz(6)
+  channels    channels  @relation(fields: [channel_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, channel_id])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model users {
+  id                  String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  username            String                @unique
+  display_name        String                @default("")
+  email               String                @unique
+  password_hash       String
+  avatar_url          String?
+  status              String?               @default("online")
+  created_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @default(now()) @db.Timestamptz(6)
+  families            families[]
+  family_members      family_members[]
+  family_restrictions family_restrictions[]
+  messages            messages[]
+  server_invites      server_invites[]
+  server_members      server_members[]
+  servers             servers[]
+  user_sessions       user_sessions[]
+  user_voice_channels user_voice_channels[]
+  voice_states        voice_states[]
+}
+
+model voice_states {
+  id          String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id     String    @db.Uuid
+  server_id   String    @db.Uuid
+  channel_id  String?   @db.Uuid
+  self_mute   Boolean?  @default(false)
+  self_deaf   Boolean?  @default(false)
+  server_mute Boolean?  @default(false)
+  server_deaf Boolean?  @default(false)
+  joined_at   DateTime? @default(now()) @db.Timestamptz(6)
+  channels    channels? @relation(fields: [channel_id], references: [id], onUpdate: NoAction)
+  servers     servers   @relation(fields: [server_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "voice_states_guild_id_fkey")
+  users       users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, server_id], map: "voice_states_user_id_guild_id_key")
+}
+
+enum channel_type {
+  text
+  voice
+  stage
+  announcement
+}
+
+enum family_role {
+  parent
+  child
+  guardian
+}
+
+enum overwrite_target_type {
+  user
+  role
+}
