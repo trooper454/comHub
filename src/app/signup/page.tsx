@@ -1,5 +1,5 @@
-console.log('Signup page loaded!');
 
+import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { hash } from '@/lib/auth';
 import { db } from '@/lib/db';

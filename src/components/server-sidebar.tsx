@@ -1,6 +1,7 @@
 // src/components/server-sidebar.tsx
 "use client";
 
+import { prisma } from '@/lib/prisma';
 import { useState, useEffect } from "react";
 import {
   Avatar,
